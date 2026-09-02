@@ -101,6 +101,18 @@ don't apply the scan/check/validate table to either:
   "nothing else imports this module." Exit 1 (internal error) → don't
   refresh, don't trust the graph this round, fall back to reading source
   directly, move on.
+  - **Gotcha, confirmed against a real repo:** if the tree has *any*
+    permanently-unparseable file (a deliberately broken fixture, a file with
+    a real syntax error nobody's fixed), `check` reports it `stale` forever —
+    even one second after a fresh `scan` with 0 other changes — because a
+    `PARSE_FAILED` file's record is defined as always-incomplete (D41/D42)
+    and is re-flagged on every run, not just when it changes. **Don't treat
+    a repeat `salak scan` as the fix here** — it will re-scan, still fail to
+    parse the same file, and `check` will report the same staleness again,
+    forever. Read *which* paths are named in the stale output before acting:
+    if they're the only files listed and they're known-broken (test
+    fixtures, WIP code), the graph is still trustworthy for everything else —
+    proceed and say so, don't loop on re-scanning.
 - **Mode B** (handoff pack only): still generate/refresh the graph if Salak
   is present — it's worth handing off — but don't let it delay or block
   Mode B's early exit after Phase 2.
@@ -127,11 +139,27 @@ don't apply the scan/check/validate table to either:
   — check that language's `adapters[].emits` first; a kind absent from
   `emits` was never trackable, so its absence proves nothing.
 
-## Known open gap — not yet closed
+## Dry-run record (2026-09-02, salak 0.1.0.dev0, against salak's own repo)
 
-This reference has not been dry-run against an actual project with Salak
-installed inside this skill's own PLAN→TEST→IMPLEMENT→REVIEW→VERIFY loop —
-only the CLI/source contract above was checked directly. Whether the Phase
-0/Phase 3 wiring above reads naturally mid-task, and whether the 20%-drop
-guard message is easy to act on in practice, is untested. Treat this
-integration as unverified-in-context until it's run once for real.
+Every command and exit code in Step 3 was run for real, not inferred:
+`version` (0), `doctor` (0, both adapters ok), `check` pre-scan (1, "no graph
+found" — matches), `scan` (2, 218 parsed/2 intentionally-broken fixtures — the
+Gotcha above was found this way), `check` post-scan (2, stale — same Gotcha),
+`validate` on the fresh graph (0). `diff` was verified against an isolated
+scratch repo (not salak's own tree, to avoid touching real source): identical
+graphs → 0, a real added file/imports → 1 with a correct nodes/edges-added
+report, a missing file argument → 2. The Axis-6 read pattern from Step 5 was
+re-run against the fresh 3 307-node graph and reproduced the same fields and
+shape as `docs/AI-CONSUMER-PLAYBOOK.md`'s examples (counts differ slightly
+because the codebase grew since that doc was written — expected, not a
+defect). `adapters[].emits` correctly excludes `calls` for every language and
+`implements` for Python only, confirming both "what not to assume" claims
+without having to trust the docs' own wording.
+
+**Not yet dry-run:** this reference has still not been exercised from inside
+a live Phase 0→Phase 3 kickoff session on a project that doesn't already have
+`salak` installed — only the CLI contract and the two usage patterns above.
+Whether an agent mid-task actually stops and asks on a `--force`-guard
+refusal (exit 3) rather than routing around it, and whether the REVIEW-stage
+`diff` habit reads naturally as part of PLAN→TEST→IMPLEMENT→REVIEW→VERIFY
+rather than as a bolted-on extra step, remains unverified in that context.
