@@ -148,6 +148,14 @@ Read every document before classifying it. Filenames lie — one of the source
 files in this very pipeline was named `code-review-*` and contained the WBS
 Architect. Classify by content.
 
+**Salak (optional, auto-detected).** If the `salak` CLI is installed, it
+supplies ground-truth `depends_on`/`imports` facts for existing code —
+generated/refreshed automatically, used to cross-check `ARCHITECTURE` claims
+in Phase 0 and to ground Phase 3 REVIEW. If it's absent, do nothing and don't
+mention it. Detection, freshness handling, and command details (which stay
+out of this file on purpose so a Salak update never requires editing this
+skill): **`references/salak-integration.md`**.
+
 Per-phase files and `_MANIFEST.md` (Architect V1.2), precedence rules,
 the intake matrix format, and the consistency checklist:
 **`references/intake-validation.md`**.
@@ -186,6 +194,8 @@ Then create/update the persistent memory structure:
   00-master-plan.md        01-decision-register.md
   02-gap-analysis.md       03-progress.md
   04-instincts.md          ← new in v2.0 (REMEMBER stage output)
+  repo-graph.json          ← owned by Salak, not this skill, if installed
+                              (see references/salak-integration.md)
 ```
 
 Templates, sync rules, and the 8-gate Reflection block for this phase:
@@ -198,7 +208,9 @@ Mode B ends here. Otherwise continue.
 Per task, in plan order, run PLAN → TEST → IMPLEMENT → REVIEW → VERIFY →
 REMEMBER. Per-stage protocol, the test-first escape hatches, Reflection gates,
 CCL stop rules, EDHO SCAN, and the anti-pattern list:
-**`references/execution-loop.md`**.
+**`references/execution-loop.md`**. On a task touching pre-existing code, the
+REVIEW/VERIFY stages also check Salak freshness first if installed —
+**`references/salak-integration.md`**.
 
 **Any new binding decision forced by implementation → STOP, propose it
 explicitly, wait for user approval, then record it.**
@@ -232,7 +244,10 @@ logged. Formats and both resume protocols: **`references/execution-loop.md`**.
     an anti-pattern, not initiative.
 11. **Reality beats records.** On state conflict, trust the repo, log the
     discrepancy.
-12. **Defer to an installed harness** instead of duplicating its workflow.
+12. **Defer to an installed tool** (agent harness, or Salak) instead of
+    duplicating its workflow — and prefer that tool's own shipped docs over
+    anything hardcoded in this skill, so a tool update doesn't require a
+    skill update.
 13. **Language routing** as defined above.
 
 Keep this file lean: read the reference file for the phase you're in rather
